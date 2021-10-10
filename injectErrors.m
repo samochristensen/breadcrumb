@@ -23,6 +23,8 @@ assert(m_x == m_delx);
 %Inject errors
 xhat_err = zeros(simpar.states.nxf,m_x);
 for i=1:m_x
-    xhat_err = [];
+    xhat_err(1:6,i) = [xhat_true(1:6,i) - dele(1:6,i)];
+    xhat_err(7:10,i) = qmult(xhat_true(7:10,i),[1; dele(7:9,i)]);
+    xhat_err(11:end,i) = [xhat_err(11:end,i) - dele(10:end,i)];
 end
 end

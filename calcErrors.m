@@ -20,10 +20,19 @@ function [ dele ] = calcErrors( xhat, x, simpar )
 [~,m_x] = size(x);
 [~, m_xhat] = size(xhat);
 assert(m_x == m_xhat);
-xhat_true = truth2nav(x);
+xhat_true = truth2nav(x, simpar);
 dele = nan(simpar.states.nxfe,m_x);
+
+%index
+ind_t = simpar.states.ix;
+ind_e = simpar.states.ixe;
+
 %Calculate errors
 for i=1:m_x
-    dele = [];
+    %dele = x - xhat
+    dele(ind_e.position) = x(ind_t.position) - xhat_true(ind_t.position);
+    dele(ind_e.velocity) = x(ind_t.velocity) - xhat_true(ind_t.velocity);
+    dele(ind_e.attitude) = x(ind_t.attitude) - xhat_true(ind_t.attitude);
+    dele(ind_e.accel_bias) = x(ind_t.accel)
 end
 end
