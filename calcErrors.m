@@ -20,19 +20,23 @@ function [ dele ] = calcErrors( xhat, x, simpar )
 [~,m_x] = size(x);
 [~, m_xhat] = size(xhat);
 assert(m_x == m_xhat);
-xhat_true = truth2nav(x, simpar);
+xhat_t = truth2nav(x, simpar);
 dele = nan(simpar.states.nxfe,m_x);
 
 %index
-ind_t = simpar.states.ix;
-ind_e = simpar.states.ixe;
+ind_t = simpar.states.ixf;
+ind_e = simpar.states.ixfe;
 
 %Calculate errors
 for i=1:m_x
     %dele = x - xhat
-    dele(ind_e.position) = x(ind_t.position) - xhat_true(ind_t.position);
-    dele(ind_e.velocity) = x(ind_t.velocity) - xhat_true(ind_t.velocity);
-    dele(ind_e.attitude) = x(ind_t.attitude) - xhat_true(ind_t.attitude);
-    dele(ind_e.accel_bias) = x(ind_t.accel)
+    dele(ind_e.position) = xhat_t(ind_t.position) - xhat(ind_t.position);
+    dele(ind_e.velocity) = xhat_t(ind_t.velocity) - xhat(ind_t.velocity);
+    q1 = xhat_t(ind_t.attitude);
+    q2 = xhat(ind_t.attitude);
+    dele(ind_e.attitude) = quat2eul(qmult(q1,qConjugate(q2))')';
+    dele(ind_e.accel_bias) = xhat_t(ind_t.accel_bias) - xhat(ind_t.accel_bias);
+    dele(ind_e.gyro_bias) = xhat_t(ind_t.gyro_bias) - xhat(ind_t.gyro_bias);
+    dele(ind_e.crumb_pos) = xhat_t(ind_t.crumb_pos) - xhat(ind_t.crumb_pos);
 end
 end

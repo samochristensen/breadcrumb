@@ -22,9 +22,16 @@ function [ xhat_err ] = injectErrors( xhat_true, dele, simpar )
 assert(m_x == m_delx);
 %Inject errors
 xhat_err = zeros(simpar.states.nxf,m_x);
+%Indeces
+ind_e = simpar.states.ixfe;
+ind_n = simpar.states.ixf;
+
 for i=1:m_x
-    xhat_err(1:6,i) = [xhat_true(1:6,i) - dele(1:6,i)];
-    xhat_err(7:10,i) = qmult(xhat_true(7:10,i),[1; dele(7:9,i)]);
-    xhat_err(11:end,i) = [xhat_err(11:end,i) - dele(10:end,i)];
+    xhat_err(ind_n.position) = xhat_true(ind_n.position) - dele(ind_e.position);
+    xhat_err(ind_n.velocity) = xhat_true(ind_n.velocity) - dele(ind_e.velocity);
+    xhat_err(ind_n.attitude) = qmult([1; dele(ind_e.attitude)./-2], xhat_true(ind_n.attitude));
+    xhat_err(ind_n.accel_bias) = xhat_true(ind_n.accel_bias) - dele(ind_e.accel_bias);
+    xhat_err(ind_n.gyro_bias) = xhat_true(ind_n.gyro_bias) - dele(ind_e.gyro_bias);
+    xhat_err(ind_n.crumb_pos) = xhat_true(ind_n.crumb_pos) - dele(ind_e.crumb_pos);
 end
 end
