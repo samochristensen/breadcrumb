@@ -1,4 +1,4 @@
-function [ x ] = truth2nav( x_t )
+function [ x ] = truth2nav( x_t, simpar )
 %truth2nav maps the truth state vector to the navigation state vector
 %
 % Inputs:
@@ -14,6 +14,7 @@ function [ x ] = truth2nav( x_t )
 % Date: 21-May-2019 14:17:45
 % Reference: 
 % Copyright 2019 Utah State University
-
-x = [];
+indx = simpar.states.ix;
+x = x_t(indx.position indx.velocity indx.attitude indx.accel_bias,...
+     indx.gyro_bias indx.crumb_pos);
 end
