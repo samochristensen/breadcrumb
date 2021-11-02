@@ -15,6 +15,7 @@ function [ x ] = truth2nav( x_t, simpar )
 % Reference: 
 % Copyright 2019 Utah State University
 indx = simpar.states.ix;
+m
 x = x_t([indx.position indx.velocity indx.attitude indx.accel_bias,...
      indx.gyro_bias indx.crumb_pos]);
 end
