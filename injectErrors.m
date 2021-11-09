@@ -30,7 +30,7 @@ for i=1:m_x
     xhat_err(ind_n.position) = xhat_true(ind_n.position) - dele(ind_e.position);
     xhat_err(ind_n.velocity) = xhat_true(ind_n.velocity) - dele(ind_e.velocity);
     xhat_err(ind_n.attitude) = qmult([1; dele(ind_e.attitude)./-2], xhat_true(ind_n.attitude));
-    xhat_err(ind_n.accel_bias) = xhat_true(ind_n.accel_bias) - dele(ind_e.accel_bias);
+    xhat_err(ind_n.accl_bias) = xhat_true(ind_n.accl_bias) - dele(ind_e.accl_bias);
     xhat_err(ind_n.gyro_bias) = xhat_true(ind_n.gyro_bias) - dele(ind_e.gyro_bias);
     xhat_err(ind_n.crumb_pos) = xhat_true(ind_n.crumb_pos) - dele(ind_e.crumb_pos);
 end

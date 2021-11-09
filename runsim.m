@@ -37,10 +37,12 @@ K_example_buff       = zeros(simpar.states.nxfe,3,nstep_aid);
 %% Initialize the truth state vector
 x_buff(:,1) = initialize_truth_state(simpar);
 %% Initialize the navigation state vector
-xhat_buff(:,1) = initialize_nav_state(x_buff, simpar);
+xhat_buff(:,1) = initialize_nav_state(x_buff(:,1), simpar)';
 %% Miscellaneous calcs
 % Synthesize continuous sensor data at t_n-1
-% ytilde_buff(:,1) = contMeas();
+%TODO: Make acceleration_x more interesting
+acceleration_x = 0;
+ytilde_buff(:,1) = contMeas(x_buff(:,1), acceleration_x, simpar);
 %Initialize the measurement counter
 k = 1;
 %Check that the error injection, calculation, and removal are all
@@ -58,30 +60,32 @@ if simpar.general.errorPropTestEnable
 end
 %% Loop over each time step in the simulation
 for i=2:nstep
-    % Propagate truth states to t_n
+    %% Propagate truth states to t_n
     %   Realize a sample of process noise (don't forget to scale Q by 1/dt!)
     %   Define any inputs to the truth state DE
     %   Perform one step of RK4 integration
-    input_truth.u = [];
-    input_truth.w = [];
+    
+    input_truth.acceleration_x = i^0.5;
+    input_truth.steer_ang_rate = 0.1*i^0.5;
     input_truth.simpar = simpar;
-    x_buff(:,i) = rk4('truthState_de', x_buff(:,i-1), input_truth,...
-        simpar.general.dt);
+    x_buff(:,i) = rk4('truthState_de', x_buff(:,i-1), input_truth, simpar.general.dt);
     % Synthesize continuous sensor data at t_n
-    ytilde_buff(:,i) = contMeas();
-    % Propagate navigation states to t_n using sensor data from t_n-1
+    ytilde_buff(:,i) = contMeas(x_buff(:,i), input_truth.acceleration_x, simpar);
+    
+    %% Propagate navigation states to t_n using sensor data from t_n-1
     %   Assign inputs to the navigation state DE
     %   Perform one step of RK4 integration
-    input_nav.ytilde = [];
+    input_nav.measured_ang_accl = ytilde_buff(1:3, i);
+    input_nav.measured_accl = ytilde_buff(4:6, i);
     input_nav.simpar = simpar;
-    xhat_buff(:,i) = rk4('navState_de', xhat_buff(:,i-1), input_nav, ...
-        simpar.general.dt);
-    % Propagate the covariance to t_n
-    input_cov.ytilde = [];
-    input_cov.simpar = simpar;
-    P_buff(:,:,i) = rk4('navCov_de', P_buff(:,:,i-1), input_cov, ...
-        simpar.general.dt);
-    % Propagate the error state from tn-1 to tn if errorPropTestEnable == 1
+    xhat_buff(:,i) = rk4('navState_de', xhat_buff(:,i-1), input_nav, simpar.general.dt);
+    
+    %% Propagate the covariance to t_n
+%     input_cov.ytilde = [];
+%     input_cov.simpar = simpar;
+%     P_buff(:,:,i) = rk4('navCov_de', P_buff(:,:,i-1), input_cov, simpar.general.dt);
+   
+    %% Propagate the error state from tn-1 to tn if errorPropTestEnable == 1
     if simpar.general.errorPropTestEnable
         input_delx.xhat = xhat_buff(:,i-1);
         input_delx.ytilde = [];
@@ -90,7 +94,7 @@ for i=2:nstep
             input_delx, simpar.general.dt);
     end
     
-    % If discrete measurements are available, perform a Kalman update
+    %% If discrete measurements are available, perform a Kalman update
     if abs(t(i)-t_kalman(k+1)) < simpar.general.dt*0.01
         %   Check error state propagation if simpar.general.errorPropTestEnable = true
         if simpar.general.errorPropTestEnable

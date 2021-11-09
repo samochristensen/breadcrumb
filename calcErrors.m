@@ -35,7 +35,7 @@ for i=1:m_x
     q1 = xhat_t(ind_t.attitude);
     q2 = xhat(ind_t.attitude);
     dele(ind_e.attitude) = quat2eul(qmult(q1,qConjugate(q2))')';
-    dele(ind_e.accel_bias) = xhat_t(ind_t.accel_bias) - xhat(ind_t.accel_bias);
+    dele(ind_e.accl_bias) = xhat_t(ind_t.accl_bias) - xhat(ind_t.accl_bias);
     dele(ind_e.gyro_bias) = xhat_t(ind_t.gyro_bias) - xhat(ind_t.gyro_bias);
     dele(ind_e.crumb_pos) = xhat_t(ind_t.crumb_pos) - xhat(ind_t.crumb_pos);
 end
