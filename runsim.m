@@ -29,9 +29,9 @@ P_buff       = zeros(simpar.states.nxfe,simpar.states.nxfe,nstep);
 % Continuous measurement buffer
 ytilde_buff     = zeros(simpar.general.n_inertialMeas,nstep);
 % Residual buffers (star tracker is included as an example)
-res_example          = zeros(3,nstep_aid);
-resCov_example       = zeros(3,3,nstep_aid);
-K_example_buff       = zeros(simpar.states.nxfe,3,nstep_aid);
+res_ibc          = zeros(1,nstep_aid);
+resCov_ibc       = zeros(3,3,nstep_aid);
+K_ibc_buff       = zeros(simpar.states.nxfe,1,nstep_aid);
 %% Initialize the navigation covariance matrix
 % P_buff(:,:,1) = initialize_covariance();
 %% Initialize the truth state vector
@@ -115,16 +115,16 @@ for i=2:nstep
         %       Estimate the error state vector
         %       Update and save the covariance matrix
         %       Correct and save the navigation states
-        ztilde_example = example.synthesize_measurement();
-        ztildehat_example = example.predict_measurement();
-        H_example = example.compute_H();
-        example.validate_linearization();
-        res_example(:,k) = example.compute_residual();
-        resCov_example(:,k) = compute_residual_cov();
-        K_example_buff(:,:,k) = compute_Kalman_gain();
-        del_x = estimate_error_state_vector();
-        P_buff(:,:,k) = update_covariance();
-        xhat_buff(:,i) = correctErrors();
+        ztilde_ibc = ibc.synthesize_measurement(x_buff(:,i), simpar);
+        ztildehat_ibc = ibc.predict_measurement(xhat_buff(:,i), simpar);
+%         H_ibc = ibc.compute_H();
+%         ibc.validate_linearization();
+        res_ibc(:,k) = ibc.compute_residual(ztilde_ibc);
+%         resCov_ibc(:,k) = compute_residual_cov(ztildehat_ibc);
+%         K_ibc_buff(:,:,k) = compute_Kalman_gain();
+%         del_x = estimate_error_state_vector();
+%         P_buff(:,:,k) = update_covariance();
+%         xhat_buff(:,i) = correctErrors();
     end
     if verbose && mod(i,100) == 0
         fprintf('%0.1f%% complete\n',100 * i/nstep);
@@ -137,9 +137,9 @@ end
 
 T_execution = toc;
 %Package up residuals
-navRes.example = res_example;
-navResCov.example = resCov_example;
-kalmanGains.example = K_example_buff;
+navRes.ibc = res_ibc;
+navResCov.ibc = resCov_ibc;
+kalmanGains.ibc = K_ibc_buff;
 %Package up outputs
 traj = struct('navState',xhat_buff,...
     'navCov',P_buff,...
