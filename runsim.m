@@ -65,8 +65,8 @@ for i=2:nstep
     %   Define any inputs to the truth state DE
     %   Perform one step of RK4 integration
     
-    input_truth.acceleration_x = i^0.5;
-    input_truth.steer_ang_rate = 0.1*i^0.5;
+    input_truth.acceleration_x = 0; %i^0.5;
+    input_truth.steer_ang_rate = 0; %0.1*i^0.5;
     input_truth.simpar = simpar;
     x_buff(:,i) = rk4('truthState_de', x_buff(:,i-1), input_truth, simpar.general.dt);
     % Synthesize continuous sensor data at t_n
@@ -119,7 +119,7 @@ for i=2:nstep
         ztildehat_ibc = ibc.predict_measurement(xhat_buff(:,i), simpar);
 %         H_ibc = ibc.compute_H();
 %         ibc.validate_linearization();
-        res_ibc(:,k) = ibc.compute_residual(ztilde_ibc);
+        res_ibc(:,k) = ibc.compute_residual(ztilde_ibc, ztildehat_ibc);
 %         resCov_ibc(:,k) = compute_residual_cov(ztildehat_ibc);
 %         K_ibc_buff(:,:,k) = compute_Kalman_gain();
 %         del_x = estimate_error_state_vector();

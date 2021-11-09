@@ -1,4 +1,4 @@
-function [ predicted_measurement ] = predict_measurement_example( xhat, simpar )
+function [ predicted_measurement ] = predict_measurement( xhat, simpar )
 %predict_measurement_example predicts the discrete measurement
 %
 % Inputs:
@@ -23,10 +23,11 @@ function [ predicted_measurement ] = predict_measurement_example( xhat, simpar )
     speedOfLight = simpar.general.c;
     k = 2*pi*carrierFreq/speedOfLight;
 
-    Inertial2Body_i = xhat(simpar.states.ix.position);
-    theta_b2i = xhat(simpar.states.ix.heading);
-    T_b2i = [cos(theta_b2i) -sin(theta_b2i) 0; sin(theta_b2i) cos(theta_b2i) 0; 0 0 1];
-    Inertial2Crumb_i = xhat(simpar.states.ix.crumb_pos);
+    Inertial2Body_i = xhat(simpar.states.ixf.position);
+    est_attitude_i2b = xhat(simpar.states.ixf.attitude);
+    est_T_b2i = q2tmat(est_attitude_i2b)';
+    
+    Inertial2Crumb_i = xhat(simpar.states.ixf.crumb_pos);
     Body2Antenna1_b = [simpar.general.r_body2antenna1_x;
                        simpar.general.r_body2antenna1_y;
                        simpar.general.r_body2antenna1_z;];
@@ -34,8 +35,8 @@ function [ predicted_measurement ] = predict_measurement_example( xhat, simpar )
                        simpar.general.r_body2antenna2_y;
                        simpar.general.r_body2antenna2_z;];
     
-    d1 = norm([Inertial2Body_i; 0] + T_b2i*Body2Antenna1_b - Inertial2Crumb_i);
-    d2 = norm([Inertial2Body_i; 0] + T_b2i*Body2Antenna2_b - Inertial2Crumb_i);
+    d1 = norm(Inertial2Body_i + est_T_b2i*Body2Antenna1_b - Inertial2Crumb_i);
+    d2 = norm(Inertial2Body_i + est_T_b2i*Body2Antenna2_b - Inertial2Crumb_i);
     
     phase1 = -k * d1;
     phase2 = -k * d2;
