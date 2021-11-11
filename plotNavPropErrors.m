@@ -34,13 +34,38 @@ htraj = plot3(x_estimate,y_estimate,z_estimate,'-.');
 hold off;
 grid on;
 
+%% Plot 3x1 trajectory
+x = traj.truthState(simpar.states.ix.position(2),:)';
+y = traj.truthState(simpar.states.ix.position(1),:)';
+z = zeros(length(x));
+x_estimate = traj.navState(simpar.states.ixf.position(2),:)';
+y_estimate = traj.navState(simpar.states.ixf.position(1),:)';
+z_estimate = traj.navState(simpar.states.ixf.position(3),:)';
+
+h_figs(end+1) = figure; hold on;
+subplot(311);
+x_true = plot(x, 'LineWidth', 2); hold on;
+x_est = plot(x_estimate, 'LineWidth', 2);
+legend('x_{true}', 'x_{est}'); ylabel('X'); hold off;
+subplot(312);
+y_true = plot(y, 'LineWidth', 2); hold on;
+y_est = plot(y_estimate, 'LineWidth', 2);
+legend('y_{true}', 'y_{est}'); ylabel('Y'); hold off;
+subplot(313);
+z_true = plot(z, 'LineWidth', 2); hold on;
+z_est = plot(z_estimate, 'LineWidth', 2);
+legend('z_{true}', 'z_{est}'); ylabel('Z'); hold off;
+hold off;
+grid on;
+
+return;
+
 %% Plot Velocity vs. Time
 h_figs(end+1) = figure;
 plot(traj.time_nav, traj.truthState(simpar.states.ix.velocity,:));
 title("Vehicle Velocity vs. Time");
 xlabel('Time(s)');
 ylabel('Velocity(m/s)');
-legend('x','y');
 grid on;
 
 %% Heading and Steering Angle vs. Time
@@ -54,6 +79,16 @@ ylabel('(deg)');
 legend('psi','phi');
 grid on;
 
+%% Orientation, True
+h_figs(end+1) = figure;
+nav_state_orient = quat2eul(traj.navState(simpar.states.ixf.attitude,:)')';
+tru_state_headin = traj.truthState(simpar.states.ix.heading,:);
+
+subplot(411); plot(traj.time_nav, nav_state_orient(1,:)); ylabel('roll?');
+subplot(412); plot(traj.time_nav, nav_state_orient(2,:)); ylabel('pitch?');
+subplot(413); plot(traj.time_nav, nav_state_orient(3,:)); ylabel('yaw?'); 
+subplot(414); plot(traj.time_nav, tru_state_headin); ylabel('tru heading');
+
 %% IBC Position vs. Time
 h_figs(end+1) = figure;
 plot(traj.time_nav,traj.navState(simpar.states.ixf.crumb_pos,:));
@@ -63,10 +98,19 @@ ylabel('Position(m)');
 legend('x','y','z');
 grid on;
 
+
 %% Accelerometer Measurements vs Time
 h_figs(end+1) = figure;
-plot(traj.time_nav, traj.navState(simpar.states.ixf.accl_bias,:));
+plot(traj.time_nav, traj.continuous_measurements(1:3,:));
 title('Accelerometer Measurements vs. Time');
+xlabel('Time(s)');
+ylabel('(m/s^2)');
+legend('x', 'y', 'z');
+grid on;
+%% Accelerometer Bias vs Time
+h_figs(end+1) = figure;
+plot(traj.time_nav, traj.navState(simpar.states.ixf.accl_bias,:));
+title('Accelerometer Bias vs. Time');
 xlabel('Time(s)');
 ylabel('(m/s^2)');
 legend('x', 'y', 'z');
@@ -74,37 +118,19 @@ grid on;
 
 %% Gyro Measurement vs Time
 h_figs(end+1) = figure;
-plot(traj.time_nav, traj.navState(simpar.states.ixf.accl_bias,:));
+plot(traj.time_nav, traj.continuous_measurements(4:6,:));
 title('Gyro Measurement vs time');
 xlabel('Time(s)');
 ylabel('(rad/s)');
 legend('x', 'y', 'z');
 grid on;
 
-% %% Example residuals
-% h_figs(end+1) = figure;
-% stairs(traj.time_kalman,traj.navRes.example'); hold on
-% xlabel('Time(s)')
-% ylabel('Star Tracker Residuals(rad)')
-% legend('x_{st}','y_{st}','z_{st}')
-% grid on;
-% %% Calculate estimation errors
-% dele = calcErrors(traj.navState, traj.truthState, simpar);
-% %% Plot position estimation error
-% h_figs(end+1) = figure;
-% stairs(traj.time_nav, dele(simpar.states.ixfe.pos,:)');
-% title('Position Error');
-% xlabel('time(s)');
-% ylabel('m');
-% legend('$x_i$','$y_i$','$z_i$')
-% grid on;
-% %% Plot velocity error
-% h_figs(end+1) = figure;
-% stairs(traj.time_nav, dele(simpar.states.ixfe.vel,:)');
-% title('Velocity Error');
-% xlabel('time(s)');
-% ylabel('m/s');
-% legend('x_i','y_i','z_i')
-% grid on;
-% %% Add the remaining estimation error plots
+%% Gyro Bias vs Time
+h_figs(end+1) = figure;
+plot(traj.time_nav, traj.navState(simpar.states.ixf.accl_bias,:));
+title('Gyro Bias vs time');
+xlabel('Time(s)');
+ylabel('(rad/s)');
+legend('x', 'y', 'z');
+grid on;
 end

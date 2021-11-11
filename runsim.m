@@ -9,16 +9,7 @@ nstep_aid = ceil(simpar.general.tsim/simpar.general.dt_kalmanUpdate);
 t = (0:nstep-1)'*simpar.general.dt;
 t_kalman = (0:nstep_aid)'.*simpar.general.dt_kalmanUpdate;
 nstep_aid = length(t_kalman);
-% %If you are computing the nominal star tracker or other sensor orientations
-% %below is an example of one way to do this
-% % qz = rotv2quat(simpar.general.thz_st,[0,0,1]');
-% % qy = rotv2quat(simpar.general.thy_st,[0,1,0]');
-% % qx = rotv2quat(simpar.general.thx_st,[1,0,0]');
-% % simpar.general.q_b2st_nominal = qmult(qx,qmult(qy,qz));
-% % qz = rotv2quat(simpar.general.thz_c,[0,0,1]');
-% % qy = rotv2quat(simpar.general.thy_c,[0,1,0]');
-% % qx = rotv2quat(simpar.general.thx_c,[1,0,0]');
-% % simpar.general.q_b2c_nominal = qmult(qx,qmult(qy,qz));
+
 %% Pre-allocate buffers for saving data
 % Truth, navigation, and error state buffers
 x_buff          = zeros(simpar.states.nx,nstep);
@@ -36,9 +27,16 @@ K_ibc_buff       = zeros(simpar.states.nxfe,1,nstep_aid);
 % P_buff(:,:,1) = initialize_covariance();
 %% Initialize the truth state vector
 x_buff(:,1) = initialize_truth_state(simpar);
+if verbose % print truth state initial conditions
+    disp(x_buff(:,1));
+end
+
 %% Initialize the navigation state vector
 xhat_buff(:,1) = initialize_nav_state(x_buff(:,1), simpar)';
-%% Miscellaneous calcs
+if verbose % print truth state initial conditions
+    disp(xhat_buff(:,1));
+end
+%% Miscellanous calcs
 % Synthesize continuous sensor data at t_n-1
 %TODO: Make acceleration_x more interesting
 acceleration_x = 0;
@@ -65,8 +63,8 @@ for i=2:nstep
     %   Define any inputs to the truth state DE
     %   Perform one step of RK4 integration
     
-    input_truth.acceleration_x = 0; %i^0.5;
-    input_truth.steer_ang_rate = 0; %0.1*i^0.5;
+    input_truth.acceleration_x = simpar.general.a;
+    input_truth.steer_ang_rate = simpar.general.xi;
     input_truth.simpar = simpar;
     x_buff(:,i) = rk4('truthState_de', x_buff(:,i-1), input_truth, simpar.general.dt);
     % Synthesize continuous sensor data at t_n
