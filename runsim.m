@@ -37,9 +37,14 @@ if verbose % print truth state initial conditions
     disp(xhat_buff(:,1));
 end
 %% Miscellanous calcs
+% Generate Inputs and Noise
+%TODO: Make inputs more interesting
+acceleration_x = simpar.general.a;
+steer_ang_rate = simpar.general.xi;
+
+accelerometer_noise = [0; 0; 0;];
+gyroscope_noise = [0; 0; 0;];
 % Synthesize continuous sensor data at t_n-1
-%TODO: Make acceleration_x more interesting
-acceleration_x = 0;
 ytilde_buff(:,1) = contMeas(x_buff(:,1), acceleration_x, simpar);
 %Initialize the measurement counter
 k = 1;
@@ -54,7 +59,7 @@ if simpar.general.errorPropTestEnable
     for i=1:length(fnames)
         delx_buff(i,1) = simpar.errorInjection.(fnames{i});
     end
-    xhat_buff(:,1) = injectErrors(truth2nav(x_buff(:,1)), delx_buff(:,1), simpar);
+    xhat_buff(:,1) = injectErrors(truth2nav(x_buff(:,1), simpar), delx_buff(:,1), simpar);
 end
 %% Loop over each time step in the simulation
 for i=2:nstep
@@ -63,12 +68,13 @@ for i=2:nstep
     %   Define any inputs to the truth state DE
     %   Perform one step of RK4 integration
     
-    input_truth.acceleration_x = simpar.general.a;
-    input_truth.steer_ang_rate = simpar.general.xi;
+    input_truth.acceleration_x = acceleration_x;
+    input_truth.steer_ang_rate = steer_ang_rate;
+    input_truth.imu_noise = [accelerometer_noise; gyroscope_noise];
     input_truth.simpar = simpar;
     x_buff(:,i) = rk4('truthState_de', x_buff(:,i-1), input_truth, simpar.general.dt);
     % Synthesize continuous sensor data at t_n
-    ytilde_buff(:,i) = contMeas(x_buff(:,i), input_truth.acceleration_x, simpar);
+    ytilde_buff(:,i) = contMeas(x_buff(:,i), acceleration_x, simpar);
     
     %% Propagate navigation states to t_n using sensor data from t_n-1
     %   Assign inputs to the navigation state DE
@@ -86,7 +92,7 @@ for i=2:nstep
     %% Propagate the error state from tn-1 to tn if errorPropTestEnable == 1
     if simpar.general.errorPropTestEnable
         input_delx.xhat = xhat_buff(:,i-1);
-        input_delx.ytilde = [];
+        input_delx.ytilde = ytilde_buff(:,i);
         input_delx.simpar = simpar;
         delx_buff(:,i) = rk4('errorState_de', delx_buff(:,i-1), ...
             input_delx, simpar.general.dt);
@@ -96,7 +102,7 @@ for i=2:nstep
     if abs(t(i)-t_kalman(k+1)) < simpar.general.dt*0.01
         %   Check error state propagation if simpar.general.errorPropTestEnable = true
         if simpar.general.errorPropTestEnable
-            checkErrorPropagation(x_buff(:,i), xhat_buff(:,i),...
+            checkErrorPropagation(truth2nav(x_buff(:,i),simpar), xhat_buff(:,i),...
                 delx_buff(:,i), simpar);
         end
         %Adjust the Kalman update index
@@ -113,12 +119,13 @@ for i=2:nstep
         %       Estimate the error state vector
         %       Update and save the covariance matrix
         %       Correct and save the navigation states
-        ztilde_ibc = ibc.synthesize_measurement(x_buff(:,i), simpar);
-        ztildehat_ibc = ibc.predict_measurement(xhat_buff(:,i), simpar);
+        ztilde_ibc_buff(:,k) = ibc.synthesize_measurement(truth2nav(x_buff(:,i), simpar), simpar);
+        ztildehat_ibc_buff(:,k) = ibc.predict_measurement(xhat_buff(:,i), simpar);
 %         H_ibc = ibc.compute_H();
 %         ibc.validate_linearization();
-        res_ibc(:,k) = ibc.compute_residual(ztilde_ibc, ztildehat_ibc);
-%         resCov_ibc(:,k) = compute_residual_cov(ztildehat_ibc);
+        res_ibc(:,k) = ibc.compute_residual(ztilde_ibc_buff(:,k), ztildehat_ibc_buff(:,k));
+
+%         resCov_ibc(:,k) = compute_residual_cov();
 %         K_ibc_buff(:,:,k) = compute_Kalman_gain();
 %         del_x = estimate_error_state_vector();
 %         P_buff(:,:,k) = update_covariance();
@@ -136,8 +143,8 @@ end
 T_execution = toc;
 %Package up residuals
 navRes.ibc = res_ibc;
-navResCov.ibc = resCov_ibc;
-kalmanGains.ibc = K_ibc_buff;
+navResCov.ibc = 0; %resCov_ibc;
+kalmanGains.ibc = 0; %K_ibc_buff;
 %Package up outputs
 traj = struct('navState',xhat_buff,...
     'navCov',P_buff,...
@@ -149,5 +156,7 @@ traj = struct('navState',xhat_buff,...
     'executionTime',T_execution,...
     'continuous_measurements',ytilde_buff,...
     'kalmanGain',kalmanGains,...
-    'simpar',simpar);
+    'simpar',simpar,...
+    'meas_ibc', ztilde_ibc_buff,...
+    'pred_ibc', ztildehat_ibc_buff);
 end
