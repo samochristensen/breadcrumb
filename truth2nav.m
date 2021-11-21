@@ -1,4 +1,4 @@
-function [ x ] = truth2nav( x_t, simpar )
+function [ xhat ] = truth2nav( x_t, simpar )
 %truth2nav maps the truth state vector to the navigation state vector
 %
 % Inputs:
@@ -24,15 +24,24 @@ indx = simpar.states.ix;
 %          indx.crumb_pos]);
 
 % Plane model? Assumes that 2D plane
+% for loops from isaac's code
+for i = 1:size(x_t, 2)
+    true_position = [x_t([indx.position], i)', 0]';
+    % my original: true_velocity = [x_t([indx.velocity])', 0, 0]';
+    % my original: true_orientation = eul2quat([0, 0, x_t([indx.heading])], "XYZ")';
+    true_velocity = [-x_t(indx.velocity,i)*sin(x_t(indx.heading,i));...
+                     x_t(indx.velocity,i)*cos(x_t(indx.heading,i));...
+                     0];
+    true_orientation = [cos(x_t(indx.heading,i)/2);...
+                        0;...
+                        0;...
+                        sin(x_t(indx.heading,i)/2);];
+    true_accl_bias = x_t([indx.accl_bias], i);
+    true_gyro_bias = x_t([indx.gyro_bias], i);
+    true_crumb_pos = x_t([indx.crumb_pos], i);
+end
 
-true_position = [x_t([indx.position])', 0]';
-true_velocity = [x_t([indx.velocity])', 0, 0]';
-true_orientation = eul2quat([0, 0, x_t([indx.heading])], "XYZ")';
-true_accl_bias = x_t([indx.accl_bias]);
-true_gyro_bias = x_t([indx.gyro_bias]);
-true_crumb_pos = x_t([indx.crumb_pos]);
-
-x = [true_position;...
+xhat = [true_position;...
      true_velocity;...
      true_orientation;...
      true_accl_bias;...

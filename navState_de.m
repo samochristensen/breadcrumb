@@ -18,19 +18,20 @@ function xhatdot = navState_de(xhat,input)
 
 %% Unpack the inputs
 simpar = input.simpar;
-meas_accl = input.measured_accl;
-meas_ang_accl = input.measured_ang_accl;
+meas_accl = input.measured_accl;                    % a_tilde
+meas_ang_accl = input.measured_ang_accl;            % omega_tilde
 
-accl_time_constant = simpar.general.tau_accel;
-gyro_time_constant = simpar.general.tau_gyro;
+accl_time_constant = simpar.general.tau_accel;      % tau_a
+gyro_time_constant = simpar.general.tau_gyro;       % tau_g
  
-est_accl_bias = xhat(simpar.states.ixf.accl_bias);
-est_gyro_bias = xhat(simpar.states.ixf.gyro_bias);
-gravity_i = [0; 0; simpar.general.g];  % NED, Coordinates
+est_accl_bias = xhat(simpar.states.ixf.accl_bias);  % b_a_hat
+est_gyro_bias = xhat(simpar.states.ixf.gyro_bias);  % b_g_hat
+gravity_i = [0; 0; -1*simpar.general.g];  % NED        % g_vec_i
 
-est_velocity = xhat(simpar.states.ixf.velocity);
-est_attitude_i2b = xhat(simpar.states.ixf.attitude);
-est_T_b2i = q2tmat(est_attitude_i2b)';
+est_velocity = xhat(simpar.states.ixf.velocity);    % velocity
+est_attitude_i2b = xhat(simpar.states.ixf.attitude);% quaternion
+est_attitude_i2b = est_attitude_i2b./norm(est_attitude_i2b);
+est_T_b2i = q2tmat(est_attitude_i2b);              % nav DCM
 
 
 %% Compute individual elements of x_dot

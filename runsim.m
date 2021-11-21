@@ -22,30 +22,25 @@ ytilde_buff     = zeros(simpar.general.n_inertialMeas,nstep);
 % Residual buffers (star tracker is included as an example)
 res_ibc          = zeros(1,nstep_aid);
 resCov_ibc       = zeros(3,3,nstep_aid);
-K_ibc_buff       = zeros(simpar.states.nxfe,1,nstep_aid);
+K_ibc_buff       = zeros(simpar.states.nxfe,3,nstep_aid);
+ztilde_ibc_buff = zeros(1,nstep_aid);
+ztildehat_ibc_buff = zeros(1,nstep_aid);
 %% Initialize the navigation covariance matrix
 % P_buff(:,:,1) = initialize_covariance();
 %% Initialize the truth state vector
 x_buff(:,1) = initialize_truth_state(simpar);
-if verbose % print truth state initial conditions
-    disp(x_buff(:,1));
-end
-
 %% Initialize the navigation state vector
-xhat_buff(:,1) = initialize_nav_state(x_buff(:,1), simpar)';
-if verbose % print truth state initial conditions
-    disp(xhat_buff(:,1));
-end
+xhat_buff(:,1) = initialize_nav_state(x_buff(:,1), simpar);
 %% Miscellanous calcs
 % Generate Inputs and Noise
 %TODO: Make inputs more interesting
-acceleration_x = simpar.general.a;
-steer_ang_rate = simpar.general.xi;
+acceleration_x = ones(length(t),1) * simpar.general.a;
+steer_ang_rate = ones(length(t),1) * simpar.general.xi;
 
 accelerometer_noise = [0; 0; 0;];
 gyroscope_noise = [0; 0; 0;];
 % Synthesize continuous sensor data at t_n-1
-ytilde_buff(:,1) = contMeas(x_buff(:,1), acceleration_x, simpar);
+ytilde_buff(:,1) = contMeas(x_buff(:,1), acceleration_x(1), simpar);
 %Initialize the measurement counter
 k = 1;
 %Check that the error injection, calculation, and removal are all
@@ -68,13 +63,13 @@ for i=2:nstep
     %   Define any inputs to the truth state DE
     %   Perform one step of RK4 integration
     
-    input_truth.acceleration_x = acceleration_x;
-    input_truth.steer_ang_rate = steer_ang_rate;
+    input_truth.acceleration_x = acceleration_x(i);
+    input_truth.steer_ang_rate = steer_ang_rate(i);
     input_truth.imu_noise = [accelerometer_noise; gyroscope_noise];
     input_truth.simpar = simpar;
     x_buff(:,i) = rk4('truthState_de', x_buff(:,i-1), input_truth, simpar.general.dt);
     % Synthesize continuous sensor data at t_n
-    ytilde_buff(:,i) = contMeas(x_buff(:,i), acceleration_x, simpar);
+    ytilde_buff(:,i) = contMeas(x_buff(:,i), acceleration_x(i), simpar);
     
     %% Propagate navigation states to t_n using sensor data from t_n-1
     %   Assign inputs to the navigation state DE
@@ -131,7 +126,7 @@ for i=2:nstep
 %         P_buff(:,:,k) = update_covariance();
 %         xhat_buff(:,i) = correctErrors();
     end
-    if verbose && mod(i,100) == 0
+    if verbose && mod(i,1000) == 0
         fprintf('%0.1f%% complete\n',100 * i/nstep);
     end
 end
@@ -147,16 +142,16 @@ navResCov.ibc = 0; %resCov_ibc;
 kalmanGains.ibc = 0; %K_ibc_buff;
 %Package up outputs
 traj = struct('navState',xhat_buff,...
-    'navCov',P_buff,...
-    'navRes',navRes,...
-    'navResCov',navResCov,...
-    'truthState',x_buff,...
-    'time_nav',t,...
-    'time_kalman',t_kalman,...
-    'executionTime',T_execution,...
-    'continuous_measurements',ytilde_buff,...
-    'kalmanGain',kalmanGains,...
-    'simpar',simpar,...
-    'meas_ibc', ztilde_ibc_buff,...
-    'pred_ibc', ztildehat_ibc_buff);
+              'navCov',P_buff,...
+              'navRes',navRes,...
+              'navResCov',navResCov,...
+              'truthState',x_buff,...
+              'time_nav',t,...
+              'time_kalman',t_kalman,...
+              'executionTime',T_execution,...
+              'continuous_measurements',ytilde_buff,...
+              'kalmanGain',kalmanGains,...
+              'simpar',simpar,...
+              'meas_ibc', ztilde_ibc_buff,...
+              'pred_ibc', ztildehat_ibc_buff);
 end

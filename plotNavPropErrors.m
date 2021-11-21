@@ -58,7 +58,7 @@ legend('z_{true}', 'z_{est}'); ylabel('Z'); hold off;
 hold off;
 grid on;
 
-return;
+%return;
 
 %% Plot Velocity vs. Time
 h_figs(end+1) = figure;

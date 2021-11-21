@@ -1,4 +1,4 @@
-function [ xhat ] = initialize_nav_state( x, simpar)
+function [ xhat ] = initialize_nav_state( true_x, simpar)
 %initialize_nav_state initializes the navigation state vector consistent
 %with the initial covariance matrix
 %
@@ -21,8 +21,7 @@ function [ xhat ] = initialize_nav_state( x, simpar)
 % Consistent with the truth state initialization, you should randomize the
 % vehicle states, and initialize any sensor parameters to zero.  An example
 % of these calculations are shown below.
-x_t = x;
-xhat = truth2nav(x_t, simpar);
+xhat = truth2nav(true_x, simpar);
 
 % % [L_posvelatt,p] = chol(P(simpar.states.ixfe.vehicle,...
 % %     simpar.states.ixfe.vehicle,1),'lower');
