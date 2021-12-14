@@ -22,16 +22,15 @@ function [ xhat_err ] = injectErrors( xhat_true, dele, simpar )
 assert(m_x == m_delx);
 %Inject errors
 xhat_err = zeros(simpar.states.nxf,m_x);
-%Indeces
-ind_e = simpar.states.ixfe;
-ind_n = simpar.states.ixf;
 
-for i=1:m_x
-    xhat_err(ind_n.position) = xhat_true(ind_n.position) - dele(ind_e.position);
-    xhat_err(ind_n.velocity) = xhat_true(ind_n.velocity) - dele(ind_e.velocity);
-    xhat_err(ind_n.attitude) = qmult([1; dele(ind_e.attitude)./-2], xhat_true(ind_n.attitude));
-    xhat_err(ind_n.accl_bias) = xhat_true(ind_n.accl_bias) - dele(ind_e.accl_bias);
-    xhat_err(ind_n.gyro_bias) = xhat_true(ind_n.gyro_bias) - dele(ind_e.gyro_bias);
-    xhat_err(ind_n.crumb_pos) = xhat_true(ind_n.crumb_pos) - dele(ind_e.crumb_pos);
-end
+% Error injection mapping
+xhat_err(simpar.states.ixf.pos) = xhat_true(simpar.states.ixf.pos) - dele(simpar.states.ixfe.pos);
+xhat_err(simpar.states.ixf.vel) = xhat_true(simpar.states.ixf.vel) - dele(simpar.states.ixfe.vel);
+quat1 = [1;  -dele(simpar.states.ixfe.att)/2];
+quat2 = xhat_true(simpar.states.ixf.att);
+xhat_err(simpar.states.ixf.att) = qmult(quat1, quat2);
+
+xhat_err(simpar.states.ixf.abias) = xhat_true(simpar.states.ixf.abias) - dele(simpar.states.ixfe.abias);
+xhat_err(simpar.states.ixf.gbias) = xhat_true(simpar.states.ixf.gbias) - dele(simpar.states.ixfe.gbias);
+xhat_err(simpar.states.ixf.cpos) = xhat_true(simpar.states.ixf.cpos) - dele(simpar.states.ixfe.cpos);
 end

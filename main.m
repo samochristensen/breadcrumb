@@ -5,7 +5,7 @@ totalTimeId = tic;
 set(groot, 'defaultAxesTickLabelInterpreter','latex');
 %% Setup paths and matlab file object for saving data
 filename = getDateTimeStringFilename( 'sim' );
-paramfile = 'config_randy.xlsx';
+paramfile = 'config.xlsx';
 savedir = strcat('./sims/',filename,'/');
 mkdir(savedir)
 copyfile(paramfile,strcat(savedir,filename,'_config.xlsx'));
@@ -21,13 +21,13 @@ savefile.savedir = savedir;
 savefile.filename = filename;
 %% Read in the simulation parameters
 %Define the simparams
-checkProp = 1;
-runSingleMonteCarlo = 0;
-runMonteCarlo = 0;
-savefigs = 0;
 [ simpar, ~ ] = createSimParams( paramfile );
+checkProp = simpar.general.checkProp;
+runSingleMonteCarlo = simpar.general.runSingleMonteCarlo;
+runMonteCarlo = simpar.general.runMonteCarlo;
+savefigs = simpar.general.savefigs;
 %% Ensure certain flags are not enabled for certain runs
-if simpar.general.measLinerizationCheckEnable
+if simpar.general.measLinearizationCheckEnable
     assert(runSingleMonteCarlo == 0,...
         'Measurement linearization check is only valid for checkProp == 1')
     assert(runMonteCarlo == 0,...
@@ -38,7 +38,6 @@ end
 %% Check propagation and nonlinear measurement modeling
 if checkProp
     [ ~, simpar_ref ] = createSimParams( paramfile );
-    
     traj_propcheck = runsim(simpar_ref,1,1);
     savefile.traj_propcheck = traj_propcheck;
     h_figs_prop_check = plotNavPropErrors(traj_propcheck);
@@ -92,8 +91,7 @@ if runMonteCarlo
     tic_mc = tic;
     parfor i=1:simpar.general.n_MonteCarloRuns
         traj(i) = runsim(simpar, 0, i);
-        errors(:,:,i) = calcErrors( traj(i).navState, ...
-            traj(i).truthState, simpar );
+        errors(:,:,i) = calcErrors( traj(i).navState, truth2nav(traj(i).truthState,simpar), simpar );
         fprintf('%d/%d complete\n',i, simpar.general.n_MonteCarloRuns);
     end
     dt_mc = toc(tic_mc);
@@ -120,5 +118,5 @@ if runMonteCarlo
     fprintf('MC_time = %g\n',dt_ref + dt_mc);
 end
 %% Final stuff
-totalTime = toc(totalTimeId)
+totalTime = toc(totalTimeId);
 savefile.totalTime = totalTime;

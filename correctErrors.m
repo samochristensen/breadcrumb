@@ -22,18 +22,18 @@ function [ x_hat_c ] = correctErrors( x_hat, dele, simpar)
 [~, m_delx] = size(dele);
 assert(m_x == m_delx);
 x_hat_c = nan(simpar.states.nxf,m_x);
-
-%index
-ind_t = simpar.states.ixf;
-ind_e = simpar.states.ixfe;
-
 %Correct errors
-for i=1:m_x
-    x_hat_c(ind_t.position) = x_hat(ind_t.position) + dele(ind_e.position);
-    x_hat_c(ind_t.velocity) = x_hat(ind_t.velocity) + dele(ind_e.velocity);
-    x_hat_c(ind_t.attitude) = qmult([1; dele(ind_e.attitude)./2], x_hat(ind_t.attitude));
-    x_hat_c(ind_t.accl_bias) = x_hat(ind_t.accl_bias) + dele(ind_e.accl_bias);
-    x_hat_c(ind_t.gyro_bias) = x_hat(ind_t.gyro_bias) + dele(ind_e.gyro_bias);
-    x_hat_c(ind_t.crumb_pos) = x_hat(ind_t.crumb_pos) + dele(ind_e.crumb_pos);
-end
+
+% Errors have been calculated and need to be removed
+
+% Error correction mapping
+x_hat_c(simpar.states.ixf.pos) = x_hat(simpar.states.ixf.pos) + dele(simpar.states.ixfe.pos);
+x_hat_c(simpar.states.ixf.vel) = x_hat(simpar.states.ixf.vel) + dele(simpar.states.ixfe.vel);
+quat1 = [1; dele(simpar.states.ixfe.att)/2];
+quat2 = x_hat(simpar.states.ixf.att);
+q = qmult(quat1, quat2);
+x_hat_c(simpar.states.ixf.att) = normalizeQuat(q);
+x_hat_c(simpar.states.ixf.abias) = x_hat(simpar.states.ixf.abias) + dele(simpar.states.ixfe.abias);
+x_hat_c(simpar.states.ixf.gbias) = x_hat(simpar.states.ixf.gbias) + dele(simpar.states.ixfe.gbias);
+x_hat_c(simpar.states.ixf.cpos) = x_hat(simpar.states.ixf.cpos) + dele(simpar.states.ixfe.cpos);
 end

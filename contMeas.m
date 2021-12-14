@@ -1,4 +1,4 @@
-function [ y_tilde ] = contMeas(x, acceleration_x, simpar)
+function [ ytilde ] = contMeas(x, input, simpar)
 %contInertialMeas synthesizes noise measurements used to propagate the
 %navigation state
 %
@@ -18,21 +18,18 @@ function [ y_tilde ] = contMeas(x, acceleration_x, simpar)
 % Reference: 
 % Copyright 2020 Utah State University
 
-accl_bias = x(simpar.states.ix.accl_bias);
-gyro_bias = x(simpar.states.ix.gyro_bias);
-grav_body = [0; 0; -simpar.general.g];
+% Unpack variables
+b_a = x(simpar.states.ix.abias);
+b_g = x(simpar.states.ix.gbias);
+g_vec_b = [0; 0; -simpar.general.g];
+a_y = input.a_y;
+n_a = input.w_vec([1:3]);
+n_g = input.w_vec([4:6]);
 
-%TODO: Implement accelerometer noise here
-accel_noise = zeros(3,1);
-%TODO: Implement gyroscope noise here
-gyro_noise = zeros(3,1);  
+omega = calc_omega(x,simpar);
+a = calc_accel(a_y,x,simpar);
 
-acceleration = calcAccel(x, acceleration_x, simpar);
-angular_accel = calcAngAccel(x, simpar);
-
-measured_acceleration = acceleration - grav_body + accl_bias + accel_noise;
-measured_angular_accel = angular_accel + gyro_bias + gyro_noise;
-
-y_tilde = [measured_acceleration; measured_angular_accel];      
-
+a_tilde = a - g_vec_b + b_a + n_a;
+omega_tilde = omega + b_g + n_g;
+ytilde = [a_tilde; omega_tilde];
 end

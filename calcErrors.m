@@ -20,23 +20,16 @@ function [ dele ] = calcErrors( xhat, x, simpar )
 [~,m_x] = size(x);
 [~, m_xhat] = size(xhat);
 assert(m_x == m_xhat);
-xhat_t = truth2nav(x, simpar);
 dele = nan(simpar.states.nxfe,m_x);
-
-%index
-ind_t = simpar.states.ixf;
-ind_e = simpar.states.ixfe;
-
-%Calculate errors
-for i=1:m_x
-    %dele = x - xhat
-    dele(ind_e.position) = xhat_t(ind_t.position) - xhat(ind_t.position);
-    dele(ind_e.velocity) = xhat_t(ind_t.velocity) - xhat(ind_t.velocity);
-    q1 = xhat_t(ind_t.attitude);
-    q2 = xhat(ind_t.attitude);
-    dele(ind_e.attitude) = quat2eul(qmult(q1,qConjugate(q2))')';
-    dele(ind_e.accl_bias) = xhat_t(ind_t.accl_bias) - xhat(ind_t.accl_bias);
-    dele(ind_e.gyro_bias) = xhat_t(ind_t.gyro_bias) - xhat(ind_t.gyro_bias);
-    dele(ind_e.crumb_pos) = xhat_t(ind_t.crumb_pos) - xhat(ind_t.crumb_pos);
+% Estimation error mapping
+for i=1:size(x,2)
+    dele(simpar.states.ixfe.pos,i) = x(simpar.states.ixf.pos,i) - xhat(simpar.states.ixf.pos,i);
+    dele(simpar.states.ixfe.vel,i) = x(simpar.states.ixf.vel,i) - xhat(simpar.states.ixf.vel,i);
+    pre_del_theta = qmult(x(simpar.states.ixf.att,i), qConjugate(xhat(simpar.states.ixf.att,i)));
+    dele(simpar.states.ixfe.att,i) = 2*pre_del_theta([2:4]);
+    dele(simpar.states.ixfe.abias,i) = x(simpar.states.ixf.abias,i) - xhat(simpar.states.ixf.abias,i);
+    dele(simpar.states.ixfe.gbias,i) = x(simpar.states.ixf.gbias,i) - xhat(simpar.states.ixf.gbias,i);
+    dele(simpar.states.ixfe.cpos,i) = x(simpar.states.ixf.cpos,i) - xhat(simpar.states.ixf.cpos,i);
 end
+
 end

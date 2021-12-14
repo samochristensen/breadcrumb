@@ -18,47 +18,39 @@ function xhatdot = navState_de(xhat,input)
 
 %% Unpack the inputs
 simpar = input.simpar;
-meas_accl = input.measured_accl;                    % a_tilde
-meas_ang_accl = input.measured_ang_accl;            % omega_tilde
+omega_tilde = input.omega_tilde;
+a_tilde = input.a_tilde;
+tau_a = simpar.general.tau_a;
+tau_g = simpar.general.tau_g;
+b_a_hat = xhat(simpar.states.ixf.abias);
+b_g_hat = xhat(simpar.states.ixf.gbias);
+g_vec_i = [0; 0; -simpar.general.g];
 
-accl_time_constant = simpar.general.tau_accel;      % tau_a
-gyro_time_constant = simpar.general.tau_gyro;       % tau_g
- 
-est_accl_bias = xhat(simpar.states.ixf.accl_bias);  % b_a_hat
-est_gyro_bias = xhat(simpar.states.ixf.gyro_bias);  % b_g_hat
-gravity_i = [0; 0; -1*simpar.general.g];  % NED        % g_vec_i
-
-est_velocity = xhat(simpar.states.ixf.velocity);    % velocity
-est_attitude_i2b = xhat(simpar.states.ixf.attitude);% quaternion
-est_attitude_i2b = est_attitude_i2b./norm(est_attitude_i2b);
-est_T_b2i = q2tmat(est_attitude_i2b);              % nav DCM
-
+%% Precalculations
+q = xhat(simpar.states.ixf.att);
+q = q./norm(q);
+nav_dcm = q2tmat(q);
 
 %% Compute individual elements of x_dot
-% time derivative of position
-dot_position = est_velocity;
-% derivative of velocity - w/ Isaac's Revisions
-conj_est_attitude = qConjugate(est_attitude_i2b);
-accel_quat = [0; meas_accl - est_accl_bias;];
-dot_vel_pre = qmult(accel_quat, qmult(accel_quat, conj_est_attitude)); 
-dot_velocity = dot_vel_pre([2 3 4]) + gravity_i;
+% Time-derivative of position
+ xhatdot(simpar.states.ixf.pos) = xhat(simpar.states.ixf.vel);
 
-% derivative of attitude
-attitude_quat = [0; meas_ang_accl - est_gyro_bias];
-dot_attitude = 0.5 * qmult(attitude_quat, est_attitude_i2b); 
+% Time-derivative of velocity
+xhatdot(simpar.states.ixf.vel) = nav_dcm'*(a_tilde - b_a_hat) + g_vec_i;
 
-% derivative of accl bias
-dot_accl_bias = (-1/accl_time_constant)*est_accl_bias;
-% derovatove of gyro bias
-dot_gyro_bias = (-1/gyro_time_constant)*est_gyro_bias;
-% derivative of crumb pos
-dot_crumb_pos = zeros(3,1);
+% Time-derivative of attitude quaternion
+w_quat = [0; omega_tilde-b_g_hat];
+xhatdot(simpar.states.ixf.att) = (1/2)*qmult(w_quat, q);
 
-%% Assign to output
-xhatdot = [dot_position;
-           dot_velocity;
-           dot_attitude;
-           dot_accl_bias;
-           dot_gyro_bias;
-           dot_crumb_pos;];
+% Time-derivative of accel bias
+xhatdot(simpar.states.ixf.abias) = -(1/tau_a)*b_a_hat;
+
+% Time-derivative of gyro bias
+xhatdot(simpar.states.ixf.gbias) = -(1/tau_g)*b_g_hat;
+
+% Time-derivative of ground circuit position
+xhatdot(simpar.states.ixf.cpos) = [0; 0; 0];
+
+% Transpose x_dot for column vector
+xhatdot = xhatdot';
 end

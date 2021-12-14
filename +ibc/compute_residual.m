@@ -1,4 +1,4 @@
-function [ residual ] = compute_residual( ztilde_ibc, ztildehat_ibc )
+function [res_ibc] = compute_residual(ztilde_ibc, ztildehat_ibc)
 %compute_residual_example calculates the measurement residual
 %
 % Inputs:
@@ -19,6 +19,5 @@ function [ residual ] = compute_residual( ztilde_ibc, ztildehat_ibc )
 % Reference: 
 % Copyright 2020 Utah State University
 
-residual = 0;
-
+res_ibc = ztilde_ibc - ztildehat_ibc;
 end
